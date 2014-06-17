@@ -23,6 +23,8 @@
 
     <permission android:name="com.otaupdater.permission.C2D_MESSAGE" android:protectionLevel="signature" />
     
+    <uses-permission android:name="android.permission.DELETE_CACHE_FILES" />
+    <uses-permission android:name="android.permission.ACCESS_CACHE_FILESYSTEM" />
     <uses-permission android:name="android.permission.REBOOT" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
