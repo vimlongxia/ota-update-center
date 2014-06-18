@@ -242,7 +242,7 @@ public class ListFilesActivity extends ListActivity implements AdapterView.OnIte
                     alert.setPositiveButton(R.string.alert_install, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            String args = null;
+                            String args = "";
                             Log.d("VIM", "selectedOpts[0] : " + selectedOpts[0]);
                             if (selectedOpts[0]) {
                                 args = "\n--wipe_data";
