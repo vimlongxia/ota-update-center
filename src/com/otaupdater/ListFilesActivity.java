@@ -16,8 +16,8 @@
 
 package com.otaupdater;
 
-import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import android.app.AlertDialog;
@@ -25,10 +25,10 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.PowerManager;
+import android.os.RecoverySystem;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -242,57 +242,74 @@ public class ListFilesActivity extends ListActivity implements AdapterView.OnIte
                     alert.setPositiveButton(R.string.alert_install, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            try {
-                                String name = file.getName();
-
-                                Process p = Runtime.getRuntime().exec("su");
-                                DataOutputStream os = new DataOutputStream(p.getOutputStream());
-                                os.writeBytes("rm -f /cache/recovery/command\n");
-                                os.writeBytes("rm -f /cache/recovery/extendedcommand\n");
-//                                if (selectedOpts[0]) {
-//                                    os.writeBytes("echo 'backup_rom /sdcard/clockwordmod/backup/" +
-//                                            new SimpleDateFormat("yyyy-MM-dd_HH.mm").format(new Date()) +
-//                                            "' >> /cache/recovery/extendedcommand\n");
-//                                }
-                                if (Build.MANUFACTURER.toLowerCase().contains("sony")) {
-                                    if (selectedOpts[0]) {
-                                        os.writeBytes("echo 'format(\"/data\");' >> /cache/recovery/extendedcommand\n");
-                                    }
-                                    if (selectedOpts[1]) {
-                                        os.writeBytes("echo 'format(\"/cache\");' >> /cache/recovery/extendedcommand\n");
-                                    }
-
-                                    os.writeBytes("echo 'install_zip(\"/" + Utils.getRcvrySdPath() + "/OTA-Updater/download/" + name + "\");' >> /cache/recovery/extendedcommand\n");
-                                } else {
-                                    if (selectedOpts[0]) {
-                                        os.writeBytes("echo '--wipe_data' >> /cache/recovery/command\n");
-                                    }
-                                    if (selectedOpts[1]) {
-                                        os.writeBytes("echo '--wipe_cache' >> /cache/recovery/command\n");
-                                    }
-
-                                    os.writeBytes("echo '--update_package=/" + Utils.getRcvrySdPath() + "/OTA-Updater/download/" + name + "' >> /cache/recovery/command\n");
-                                }
-
-                                os.writeBytes("sync\n");
-
-                                String rebootCmd = Utils.getRebootCmd();
-                                if (!rebootCmd.equals("$$NULL$$")) {
-                                    if (rebootCmd.endsWith(".sh")) {
-                                        os.writeBytes("sh " + rebootCmd + "\n");
-                                    } else {
-                                        os.writeBytes(rebootCmd + "\n");
-                                    }
-                                }
-
-                                os.writeBytes("sync\n");
-                                os.writeBytes("exit\n");
-                                os.flush();
-                                p.waitFor();
-                                ((PowerManager) ctx.getSystemService(POWER_SERVICE)).reboot("recovery");
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            String args = null;
+                            Log.d("VIM", "selectedOpts[0] : " + selectedOpts[0]);
+                            if (selectedOpts[0]) {
+                                args = "\n--wipe_data";
                             }
+                      
+                            Log.d("VIM", "selectedOpts[1] : " + selectedOpts[1]);
+                            if (selectedOpts[1]) {
+                                args += "\n--wipe_cache";
+                            }
+                            
+                            try {
+                                RecoverySystem.installPackageWithArgs(ctx, file, args);                    
+                            } catch (IOException e) {
+                                Log.e("VIM", "Can't perform rebootInstallPackage", e);
+                            }
+
+//                            try {
+//                                String name = file.getName();
+//
+//                                Process p = Runtime.getRuntime().exec("ls");
+//                                DataOutputStream os = new DataOutputStream(p.getOutputStream());
+//                                os.writeBytes("rm -f /cache/recovery/command\n");
+////                                os.writeBytes("rm -f /cache/recovery/extendedcommand\n");
+////                                if (selectedOpts[0]) {
+////                                    os.writeBytes("echo 'backup_rom /sdcard/clockwordmod/backup/" +
+////                                            new SimpleDateFormat("yyyy-MM-dd_HH.mm").format(new Date()) +
+////                                            "' >> /cache/recovery/extendedcommand\n");
+////                                }
+//                                if (Build.MANUFACTURER.toLowerCase().contains("sony")) {
+//                                    if (selectedOpts[0]) {
+//                                        os.writeBytes("echo 'format(\"/data\");' >> /cache/recovery/extendedcommand\n");
+//                                    }
+//                                    if (selectedOpts[1]) {
+//                                        os.writeBytes("echo 'format(\"/cache\");' >> /cache/recovery/extendedcommand\n");
+//                                    }
+//
+//                                    os.writeBytes("echo 'install_zip(\"/" + Utils.getRcvrySdPath() + "/OTA-Updater/download/" + name + "\");' >> /cache/recovery/extendedcommand\n");
+//                                } else {
+//                                    if (selectedOpts[0]) {
+//                                        os.writeBytes("echo '--wipe_data' >> /cache/recovery/command\n");
+//                                    }
+//                                    if (selectedOpts[1]) {
+//                                        os.writeBytes("echo '--wipe_cache' >> /cache/recovery/command\n");
+//                                    }
+//
+//                                    os.writeBytes("echo '--update_package=/" + Utils.getRcvrySdPath() + "/OTA-Updater/download/" + name + "' >> /cache/recovery/command\n");
+//                                }
+//
+//                                os.writeBytes("sync\n");
+//
+//                                String rebootCmd = Utils.getRebootCmd();
+//                                if (!rebootCmd.equals("$$NULL$$")) {
+//                                    if (rebootCmd.endsWith(".sh")) {
+//                                        os.writeBytes("sh " + rebootCmd + "\n");
+//                                    } else {
+//                                        os.writeBytes(rebootCmd + "\n");
+//                                    }
+//                                }
+//
+//                                os.writeBytes("sync\n");
+//                                os.writeBytes("exit\n");
+//                                os.flush();
+//                                p.waitFor();
+//                                ((PowerManager) ctx.getSystemService(POWER_SERVICE)).reboot("recovery");
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
                         }
                     });
                     alert.setNegativeButton(R.string.alert_cancel, new DialogInterface.OnClickListener() {

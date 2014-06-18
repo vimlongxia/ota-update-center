@@ -17,7 +17,6 @@
 package com.otaupdater;
 
 import java.io.BufferedInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,7 +43,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.StatFs;
@@ -290,40 +288,6 @@ public class OTAUpdaterActivity extends PreferenceActivity {
                 }
                 checkOnResume = false;
             }
-        }
-        
-        testSdcard();
-    }
-    
-    private void testSdcard(){
-        Log.d("VIM",
-                "getExternalStorageState : "
-                        + Environment.getExternalStorageState());
-        Log.d("VIM", "getDataDirectory : " + Environment.getDataDirectory());
-        Log.d("VIM",
-                "getDownloadCacheDirectory : "
-                        + Environment.getDownloadCacheDirectory());
-        Log.d("VIM",
-                "getExternalStorageDirectory : "
-                        + Environment.getExternalStorageDirectory());
-        Log.d("VIM", "getRootDirectory : " + Environment.getRootDirectory());
-        Log.d("VIM", " ");
-
-        File innerDir = Environment.getExternalStorageDirectory();
-        File rootDir = innerDir.getParentFile();
-        File[] files = rootDir.listFiles();
-        for (File file : files) {
-            Log.d("VIM", "file : " + file);
-        }
-        
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            DataOutputStream os = new DataOutputStream(process.getOutputStream());
-            os.writeBytes("rm -frv /cache/OTA-Updater/download/for_test\n");
-            os.flush();
-            process.waitFor();
-        }catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -577,6 +541,16 @@ public class OTAUpdaterActivity extends PreferenceActivity {
                 }
             }
 
+            // add by vim, delete all file in cache
+            File dir = new File(Config.DL_PATH);
+            File filelist[] = dir.listFiles();
+            if (filelist != null) {
+                for (int i = 0; i < filelist.length; i++) {
+                    filelist[i].delete();
+                }
+            }
+            // end by vim
+
             InputStream is = null;
             OutputStream os = null;
             try {
@@ -630,10 +604,14 @@ public class OTAUpdaterActivity extends PreferenceActivity {
 
                 final int lengthOfFile = conn.getContentLength();
 
-                StatFs stat = new StatFs(Config.DL_PATH);
+                // StatFs stat = new StatFs(Config.DL_PATH);
+                StatFs stat = new StatFs("/" + Utils.getOSSdPath());
                 long availSpace = ((long) stat.getAvailableBlocks())
                         * ((long) stat.getBlockSize());
+                Log.d("OTA::Download", "availSpace : " + availSpace
+                        + ", lengthOfFile : " + lengthOfFile);
                 if (lengthOfFile >= availSpace) {
+                    Log.d("OTA::Download", "lengthOfFile >= availSpace");
                     destFile.delete();
                     return 3;
                 }
